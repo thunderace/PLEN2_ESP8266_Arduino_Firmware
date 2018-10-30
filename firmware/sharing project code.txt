@@ -1,0 +1,12 @@
+Visual Studio Shared C++ Projects are supported
+
+Shared projects enabled cpp/h source code to be developed and shared between multiple projects.
+
+During compile, shared project code is merged into the temp build folder (or sub folders) and can therefore be treated the same as if it is in an Arduino project.
+
+Using the Solution Explorer, you must add a 'Reference' from an Arduino project to a Shared Project otherwise intellisense and build will not work correctly. 
+
+Shared projects that also conform to the Arduino 3rd Party Library Specification will be treated as Arduino Libraries and not as Shared Project code.
+
+
+Read More: https://www.visualmicro.com/post/2017/01/16/Arduino-Cross-Platform-Library-Development.aspx 
