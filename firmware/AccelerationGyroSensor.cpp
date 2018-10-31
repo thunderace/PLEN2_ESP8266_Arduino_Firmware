@@ -6,8 +6,9 @@
 	This software is released under the MIT License.
 	(See also : http://opensource.org/licenses/mit-license.php)
 */
-#include "Arduino.h"
-
+#include <Arduino.h>
+#include "firmware.h"
+#include "Wire.h"
 #include "Pin.h"
 #include "System.h"
 #include "AccelerationGyroSensor.h"
@@ -39,60 +40,49 @@ namespace
 		value = ((value & 0x00FF) << 8) | ((value >> 8) & 0x00FF);
 	}
 }
-#if 0
+
+void PLEN2::AccelerationGyroSensor::setup() {
+	delay(150);
+	I2C_Write(MPU6050_REGISTER_SMPLRT_DIV, 0x07);
+	I2C_Write(MPU6050_REGISTER_PWR_MGMT_1, 0x01);
+	I2C_Write(MPU6050_REGISTER_PWR_MGMT_2, 0x00);
+	I2C_Write(MPU6050_REGISTER_CONFIG, 0x00);
+	I2C_Write(MPU6050_REGISTER_GYRO_CONFIG, 0x00);//set +/-250 degree/second full scale
+	I2C_Write(MPU6050_REGISTER_ACCEL_CONFIG, 0x00);// set +/- 2g full scale
+	I2C_Write(MPU6050_REGISTER_FIFO_EN, 0x00);
+	I2C_Write(MPU6050_REGISTER_INT_ENABLE, 0x01);
+	I2C_Write(MPU6050_REGISTER_SIGNAL_PATH_RESET, 0x00);
+	I2C_Write(MPU6050_REGISTER_USER_CTRL, 0x00);
+
+}
+
+void PLEN2::AccelerationGyroSensor::I2C_Write(uint8_t regAddress, uint8_t data) {
+	Wire.beginTransmission(MPU6050SlaveAddress);
+	Wire.write(regAddress);
+	Wire.write(data);
+	Wire.endTransmission();
+}
+
 void PLEN2::AccelerationGyroSensor::sampling()
 {
-	#if DEBUG
-		volatile Utility::Profiler p(F("AccelerationGyroSensor::sampling()"));
-	#endif
-
-	/*!
-		@note
-		Firstly, occupy the right of sending data (data flow is "base-board -> head-board") by substituting HIGH for Pin::RS485_TXD().
-		If sending any data to head-board, the sensor responds values formatting 2byte, big-endian.
-
-		Just after sending any data, must give up the right of sending data (data flow is "head-board -> base-board")
-		by substituting LOW for Pin::RS485_TXD(), for receiving the values.
-	*/
-	digitalWrite(Pin::RS485_TXD(), HIGH);
-	System::BLESerial().write('<');
-	System::BLESerial().flush();
-
-	digitalWrite(Pin::RS485_TXD(), LOW);
-
-	char  read_count = 0;
-	char* filler = reinterpret_cast<char*>(m_values);
-
-	while (true)
-	{
-		if (System::BLESerial().available())
-		{
-			filler[read_count++] = System::BLESerial().read();
-		}
-
-		if (read_count == (SUM * sizeof(int)))
-		{
-			// @attention For skipping to read '\n'.
-			System::BLESerial().read();
-
-			for (int index = 0; index < SUM; index++)
-			{
-				endian_cast(m_values[index]);
-			}
-
-			break;
-		}
-
-		delay(1); // @attention A countermeasure of optimization.
-	}
-}
+#if MPU_6050
+	Wire.beginTransmission(MPU6050SlaveAddress);
+	Wire.write(MPU6050_REGISTER_ACCEL_XOUT_H);
+	Wire.endTransmission();
+	Wire.requestFrom(MPU6050SlaveAddress, (uint8_t)14);
+	m_values[ACC_X] = (((int16_t)Wire.read() << 8) | Wire.read());
+	m_values[ACC_Y] = (((int16_t)Wire.read() << 8) | Wire.read());
+	m_values[ACC_Z] = (((int16_t)Wire.read() << 8) | Wire.read());
+	//Temperature = (((int16_t)Wire.read() << 8) | Wire.read());
+	m_values[GYRO_ROLL] = (((int16_t)Wire.read() << 8) | Wire.read());
+	m_values[GYRO_PITCH] = (((int16_t)Wire.read() << 8) | Wire.read());
+	m_values[GYRO_YAW] = (((int16_t)Wire.read() << 8) | Wire.read());
 #else
-void PLEN2::AccelerationGyroSensor::sampling()
-{
-    return ;
-}
+	return;
 #endif
+}
 
+// raw values
 const int& PLEN2::AccelerationGyroSensor::getAccX()
 {
 	#if DEBUG
@@ -146,6 +136,40 @@ const int& PLEN2::AccelerationGyroSensor::getGyroYaw()
 
 	return m_values[GYRO_YAW];
 }
+
+#if 0
+// values wityh sensitivity
+const double& PLEN2::AccelerationGyroSensor::getAccX()
+{
+	return (double)m_values[ACC_X]/AccelScaleFactor;
+}
+
+const double& PLEN2::AccelerationGyroSensor::getAccY()
+{
+	return (double)m_values[ACC_Y] / AccelScaleFactor;
+}
+
+const double& PLEN2::AccelerationGyroSensor::getAccZ()
+{
+	return (double)m_values[ACC_Z] / AccelScaleFactor;
+}
+
+const double& PLEN2::AccelerationGyroSensor::getGyroRoll()
+{
+	return (double)m_values[GYRO_ROLL] / AccelScaleFactor;
+}
+
+const double& PLEN2::AccelerationGyroSensor::getGyroPitch()
+{
+	return (double)m_values[GYRO_PITCH] / AccelScaleFactor;
+}
+
+const double& PLEN2::AccelerationGyroSensor::getGyroYaw()
+{
+	return (double)m_values[GYRO_YAW] / AccelScaleFactor;
+}
+#endif
+
 
 void PLEN2::AccelerationGyroSensor::dump()
 {

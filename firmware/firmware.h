@@ -8,15 +8,10 @@
 /*!
 	@mainpage
 
-	PLEN2 - Firmware for Arduino (Atmega32u4)
+	PLEN2 - Firmware for ESP8266
 	===============================================================================
 
 	Code name "Cytisus" (version 1.3.1) is now available!
-
-
-	## Attention!
-	"Arduino" means compatible board created by us.
-	Please get it [here](http://shop.plen.jp/) or create yourself.
 
 
 	## Copyright (c) 2015,
@@ -29,12 +24,7 @@
 
 
 	## Build Enviroment
-	- Windows 8.1 Professional edition
-	- Windows 7 Home Premium
-	- Arduino IDE ver.1.6.5-r5
-	- Sublime Text 3 Build 3083
-	- [Arduino Unit](https://github.com/mmurdoch/arduinounit)
-
+	- Arduino IDE ver.1.8.5
 
 	## License
 	This software is released under the MIT License.
@@ -45,5 +35,9 @@
 	If you want to apply natural moving on PLEN, set the macro to "true".
 	(The process is using a lot of calculation space, so the firmware becomes hard to input user action.)
 */
-#define ENSOUL_PLEN2 false
+#define MPU_6050		true
+#define WS2812_HEAD		true
+#define WS2812_TORSO	true
+#define BLE_SERIAL		true
+
 

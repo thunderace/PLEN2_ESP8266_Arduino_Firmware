@@ -6,10 +6,22 @@
 	This software is released under the MIT License.
 	(See also : http://opensource.org/licenses/mit-license.php)
 */
-#include "Arduino.h"
+#include <Arduino.h>
 #include <Wire.h>
 #include <Servo.h>
 #include <Ticker.h>
+#include "firmware.h"
+#if(WS2812_HEAD || WS2812_TORSO)
+#include <Adafruit_NeoPixel.h>
+	#define WS2812_COUNT 1
+#endif
+#if (WS2812_HEAD && WS2812_TORSO)
+	#define WS2812_COUNT 2
+#endif
+
+#if (!WS2812_HEAD && !WS2812_TORSO)
+	#define WS2812_COUNT 0
+#endif
 #include <Adafruit_PWMServoDriver.h>
 
 #include "Pin.h"
@@ -18,6 +30,9 @@
 #include "JointController.h"
 #include "ExternalFs.h"
 #include "Motion.h"
+#if(WS2812_HEAD || WS2812_TORSO)
+	Adafruit_NeoPixel leds = Adafruit_NeoPixel(WS2812_COUNT, PLEN2::Pin::PIXEL_PIN(), NEO_GRB);
+#endif
 
 Adafruit_PWMServoDriver pwm;
 Servo GPIO12SERVO;
@@ -49,32 +64,27 @@ namespace
 	{
 		using namespace PLEN2;
 
-		PROGMEM const int m_SETTINGS_INITIAL[] =
+		PROGMEM const ServoData m_SETTINGS_INITIAL[] =
 		{
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,  -40, // [01] Left : Shoulder Pitch (plier épaule)
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,  245, // [02] Left : Thigh Yaw (cuisse)
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,  470, // [03] Left : Shoulder Roll (rotation épaule)
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, -100, // [04] Left : Elbow Roll (rotation coude 
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, -205, // [05] Left : Thigh Roll
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,   50, // [06] Left : Thigh Pitch
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,  445, // [07] Left : Knee Pitch (genoux)
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,  245, // [08] Left : Foot Pitch
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,  -75, // [09] Left : Foot Roll
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, JointController::ANGLE_NEUTRAL,
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, JointController::ANGLE_NEUTRAL,
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, JointController::ANGLE_NEUTRAL,
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,   15, // [10] Right : Shoulder Pitch
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,  -70, // [11] Right : Thigh Yaw
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, -390, // [12] Right : Shoulder Roll
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,  250, // [13] Right : Elbow Roll
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,  195, // [14] Right : Thigh Roll
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, -105, // [15] Right : Thigh Pitch
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, -510, // [16] Right : Knee Pitch
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, -305, // [17] Right : Foot Pitch
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX,   60, // [18] Right : Foot Roll
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, JointController::ANGLE_NEUTRAL,
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, JointController::ANGLE_NEUTRAL,
-			JointController::ANGLE_MIN, JointController::ANGLE_MAX, JointController::ANGLE_NEUTRAL
+			// angle min,				angle max,						home position
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,  -40, 16 },// [01] Left : Shoulder Pitch (plier épaule)
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,  245, -7 }, // [02] Left : Thigh Yaw (cuisse)
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,  470, -6 }, // [03] Left : Shoulder Roll (rotation épaule)
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX, -100, -5 }, // [04] Left : Elbow Roll (rotation coude 
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX, -205, -4 }, // [05] Left : Thigh Roll
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,   50, -3 }, // [06] Left : Thigh Pitch
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,  445, -2 }, // [07] Left : Knee Pitch (genoux)
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,  245, -1 }, // [08] Left : Foot Pitch
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,  -75, 0 }, // [09] Left : Foot Roll
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,   15, -17 }, // [10] Right : Shoulder Pitch
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,  -70, -8 }, // [11] Right : Thigh Yaw
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX, -390, -9 }, // [12] Right : Shoulder Roll
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,  250, -10 }, // [13] Right : Elbow Roll
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,  195, -11 }, // [14] Right : Thigh Roll
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX, -105, -12 }, // [15] Right : Thigh Pitch
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX, -510, -13 }, // [16] Right : Knee Pitch
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX, -305, -14 }, // [17] Right : Foot Pitch
+			{ JointController::ANGLE_MIN, JointController::ANGLE_MAX,   60, -15 } // [18] Right : Foot Roll
 		};
 
 		const int ERROR_LVALUE = -32768;
@@ -85,31 +95,30 @@ namespace
 void PLEN2::JointController::Init()
 {
 	pwm = Adafruit_PWMServoDriver();
-
-    pinMode(Pin::PCA9685_ENABLE(), OUTPUT);
-    digitalWrite(Pin::PCA9685_ENABLE(), LOW);
-    pinMode(Pin::LED(),OUTPUT);
-    digitalWrite(Pin::LED(),HIGH);
-    GPIO12SERVO.attach(Pin::PWM_OUT_12());
+#if WS2812_HEAD || WS2812_TORSO
+	leds.begin();
+	leds.show(); // Initialize all pixels to 'off'
+#endif
+	GPIO12SERVO.attach(Pin::PWM_OUT_12());
     GPIO14SERVO.attach(Pin::PWM_OUT_14());
     _enable = true;
     _eye_count = 3;
   //  EyeOut.attach(Pin::LED_OUT(), 200, 15000);
 
     // Initialize I2C
-    Wire.begin(4, 5);
+    Wire.begin(SDA, SCL);
 
     // PWMServoDriver
     pwm.begin();
-    pwm.setPWMFreq(PWM_FREQ());   // servos run at 300Hz updates
+    pwm.setPWMFreq(PWM_FREQ());   // servos run at 60Hz updates
 
     delay(500);
     
 	for (char joint_id = 0; joint_id < SUM; joint_id++)
 	{
-		m_SETTINGS[joint_id].MIN  = Shared::m_SETTINGS_INITIAL[joint_id * 3];
-		m_SETTINGS[joint_id].MAX  = Shared::m_SETTINGS_INITIAL[joint_id * 3 + 1];
-		m_SETTINGS[joint_id].HOME = Shared::m_SETTINGS_INITIAL[joint_id * 3 + 2];
+		m_SETTINGS[joint_id].MIN  = Shared::m_SETTINGS_INITIAL[joint_id * 3].MIN;
+		m_SETTINGS[joint_id].MAX  = Shared::m_SETTINGS_INITIAL[joint_id * 3 + 1].MAX;
+		m_SETTINGS[joint_id].HOME = Shared::m_SETTINGS_INITIAL[joint_id * 3 + 2].HOME;
 		setAngle(joint_id, m_SETTINGS[joint_id].HOME);
 	}
 }
@@ -146,7 +155,7 @@ void PLEN2::JointController::loadSettings()
 	}
 
     flipper.attach_ms(Motion::Frame::UPDATE_INTERVAL_MS, PLEN2::JointController::updateAngle);
-    flipper_second.attach(1, PLEN2::JointController::updateEyes);
+    flipper_second.attach(1, PLEN2::JointController::updateLeds);
 }
 
 
@@ -160,9 +169,9 @@ void PLEN2::JointController::resetSettings()
 
 	for (char joint_id = 0; joint_id < SUM; joint_id++)
 	{
-		m_SETTINGS[joint_id].MIN  = Shared::m_SETTINGS_INITIAL[joint_id * 3];
-		m_SETTINGS[joint_id].MAX  = Shared::m_SETTINGS_INITIAL[joint_id * 3 + 1];
-		m_SETTINGS[joint_id].HOME = Shared::m_SETTINGS_INITIAL[joint_id * 3 + 2];
+		m_SETTINGS[joint_id].MIN  = Shared::m_SETTINGS_INITIAL[joint_id * 3].MIN;
+		m_SETTINGS[joint_id].MAX  = Shared::m_SETTINGS_INITIAL[joint_id * 3 + 1].MAX;
+		m_SETTINGS[joint_id].HOME = Shared::m_SETTINGS_INITIAL[joint_id * 3 + 2].HOME;
 
 		setAngle(joint_id, m_SETTINGS[joint_id].HOME);
 	}
@@ -363,7 +372,6 @@ bool PLEN2::JointController::setHomeAngle(unsigned char joint_id, int angle)
 	return true;
 }
 
-//设置角度
 bool PLEN2::JointController::setAngle(unsigned char joint_id, int angle)
 {
 	#if DEBUG_HARD
@@ -414,7 +422,6 @@ bool PLEN2::JointController::setAngle(unsigned char joint_id, int angle)
 	return true;
 }
 
-//设置角度差
 bool PLEN2::JointController::setAngleDiff(unsigned char joint_id, int angle_diff)
 {
 	#if DEBUG_HARD
@@ -461,7 +468,6 @@ bool PLEN2::JointController::setAngleDiff(unsigned char joint_id, int angle_diff
 
 	return true;
 }
-
 
 void PLEN2::JointController::dump()
 {
@@ -532,9 +538,6 @@ const unsigned char servo_map[PLEN2::JointController::SUM] = {	16,
 																2, 
 																1, 
 																0, 
-																18, 
-																19, 
-																20, 
 																17, 
 																8, 
 																9, 
@@ -543,10 +546,7 @@ const unsigned char servo_map[PLEN2::JointController::SUM] = {	16,
 																12, 
 																13, 
 																14, 
-																15, 
-																21, 
-																22, 
-																23};
+																15};
 void PLEN2::JointController::updateAngle()
 {
     for (int joint_id = 0; joint_id < SUM; joint_id++)
@@ -568,31 +568,34 @@ void PLEN2::JointController::updateAngle()
 	PLEN2::JointController::m_1cycle_finished = true;
 }
 
-void PLEN2::JointController::updateEyes()
+void PLEN2::JointController::updateLeds()
 {
-    unsigned int led_pwm = 0;
-
-
-        if (PLEN2::System::tcp_connected()||PLEN2::System::SystemSerial().available())
-        {
-            //connected
-            if (_enable&&_eye_count>0)
-            {
-             digitalWrite(Pin::LED(),LOW);
-             _eye_count--;
-             _enable=false;
-            }else if(_eye_count>0)
-            {
-              digitalWrite(Pin::LED(),HIGH);
-              _enable=true;
-              }
-
-        }
-        else if (!PLEN2::System::tcp_connected()&&!PLEN2::System::SystemSerial().available())
-        {
-        	_eye_count=3;
-        	_enable=true;
-        }
-      
+#if WS2812_TORSO
+	// TODO : define ws2812 colors according to robot status
+	if (!PLEN2::System::tcp_connected() && !PLEN2::System::SystemSerial().available() && !PLEN2::System::BLESerial().available()) {
+		leds.setPixelColor(0, leds.Color(150, 0, 0)); // Moderately bright red color.
+		leds.show();
+		return;
+	}
+	if (PLEN2::System::tcp_connected() && PLEN2::System::SystemSerial().available()) {
+		leds.setPixelColor(0, leds.Color(0, 0, 150)); // Moderately bright blue color.
+		leds.show();
+		return;
+	}
+	if (PLEN2::System::tcp_connected()) {
+		leds.setPixelColor(0, leds.Color(0, 150, 150)); // Moderately bright ?? color.
+		leds.show();
+	}
+	if (PLEN2::System::BLESerial().available()) {
+		leds.setPixelColor(0, leds.Color(0, 0, 255)); // Full blue color.
+		leds.show();
+	}
+	else {
+		if (PLEN2::System::SystemSerial().available()) {
+			leds.setPixelColor(0, leds.Color(0, 150, 0)); // Moderately bright green color.
+			leds.show();
+		}
+	}
+#endif
 }
 

@@ -6,8 +6,7 @@
 	This software is released under the MIT License.
 	(See also : http://opensource.org/licenses/mit-license.php)
 */
-#include "Arduino.h"
-#include <Wire.h>
+#include <Arduino.h>
 
 #include "ExternalFs.h"
 #include "System.h"

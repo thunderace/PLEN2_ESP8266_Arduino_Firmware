@@ -8,47 +8,26 @@
 #ifndef PLEN2_JOINT_CONTROLLER_H
 #define PLEN2_JOINT_CONTROLLER_H
 
-#define USE_DIGTAL_SERVO 0
+typedef struct _ServoData {
+	int MIN;
+	int MAX;
+	int HOME;
+	char pin;
+}ServoData;
+
 namespace PLEN2
 {
 	class JointController;
 }
 
-/*!
-	@brief Management class of joints
-
-	In Atmega32u4, one timer can output 3 PWM signals at a time.
-	The MCU can control 24 servos by connecting 3bit multiplexer in each signal output lines.
-
-	@note
-	There is information about PLEN1.4's configuration below.
-	@code
-	enum {
-		SUM = 24, //!< Summation of the servos controllable.
-
-		ANGLE_MIN     = -600, //!< Min angle of the servos.
-		ANGLE_MAX     =  600, //!< Max angle of the servos.
-		ANGLE_NEUTRAL =    0  //!< Neutral angle of the servos.
-	};
-
-	//! @brief PWM width that to make min angle
-	inline static const int PWM_MIN()     { return 492;  }
-
-	//! @brief PWM width that to make max angle
-	inline static const int PWM_MAX()     { return 816;  }
-
-	//! @brief PWM width that to make neutral angle
-	inline static const int PWM_NEUTRAL() { return 654;  }
-	@endcode
-*/
 class PLEN2::JointController
 {
 public:
 	enum {
-		SUM = 24, //!< Summation of the servos controllable.
+		SUM = 18, //!< Summation of the servos controllable.
 
-		ANGLE_MIN     = -800, //!< Min angle of the servos.
-		ANGLE_MAX     =  800, //!< Max angle of the servos.
+		ANGLE_MIN     = -800, //!< Min angle of the servos. // TODO : fix it for MG90S
+		ANGLE_MAX     =  800, //!< Max angle of the servos. // TODO : fix it for MG90S
 		ANGLE_NEUTRAL =    0  //!< Neutral angle of the servos.
 	};
 
@@ -71,7 +50,7 @@ private:
 		int MIN;  //!< Setting about min angle.
 		int MAX;  //!< Setting about max angle.
 		int HOME; //!< Setting about home angle.
-
+		unsigned char pin;
 		/*!
 			@brief Constructor
 		*/
@@ -79,6 +58,7 @@ private:
 			: MIN(ANGLE_MIN)
 			, MAX(ANGLE_MAX)
 			, HOME(ANGLE_NEUTRAL)
+			, pin(0)
 		{
 			// noop.
 		}
@@ -86,44 +66,16 @@ private:
 
 	JointSetting m_SETTINGS[SUM];
 public:
-	/*!
-		@brief Management class (as namespace) of multiplexer
-
-		@note
-		The methods the class has are more accurate that there are in the namespace named Multiplexer,
-		but C++'s idiom doesn't accept syntax that described before.
-	*/
-	class Multiplexer {
-	public:
-		//! @brief Summation of multiplexers
-		inline static const int SUM()              { return 3; }
-
-		//! @brief Number of controllable lines by a multiplexer
-		inline static const int SELECTABLE_LINES() { return 8; }
-	};
-#if USE_DIGTAL_SERVO
-    inline static const int PWM_FREQ()    { return 320;  }
-
-	//! @brief PWM width that to make min angle
-	inline static const int PWM_MIN()     { return 1100;  }
-
-	//! @brief PWM width that to make max angle
-	inline static const int PWM_MAX()     { return 2700;  }
-
-	//! @brief PWM width that to make neutral angle
-	inline static const int PWM_NEUTRAL() { return 1900;  }
-#else
     inline static const int PWM_FREQ()    { return 60;  }
 
 	//! @brief PWM width that to make min angle
-	inline static const int PWM_MIN()     { return 175;  }
+	inline static const int PWM_MIN()     { return 100;  } // for cheap chinese MG90S
 
 	//! @brief PWM width that to make max angle
-	inline static const int PWM_MAX()     { return 575;  }
+	inline static const int PWM_MAX()     { return 550;  } // for cheap chinese MG90S
 
 	//! @brief PWM width that to make neutral angle
-	inline static const int PWM_NEUTRAL() { return 375;  }
-#endif
+	inline static const int PWM_NEUTRAL() { return PWM_MIN() + (PWM_MAX() - PWM_MIN());  } 
     
 	/*!
 		@brief Finished flag of PWM output procedure 1 cycle
@@ -284,7 +236,7 @@ public:
 
     static void updateAngle();
 
-    static void updateEyes();
+    static void updateLeds();
 };
 
 #endif // PLEN2_JOINT_CONTROLLER_H

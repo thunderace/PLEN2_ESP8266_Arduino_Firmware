@@ -115,12 +115,7 @@ public:
 			@sa
 			Refer to ISR(TIMER1_OVF_vect), in JointController.cpp.
 		*/
-    #if USE_DIGTAL_SERVO
-        UPDATE_INTERVAL_MS = 32,
-    #else
 		UPDATE_INTERVAL_MS = 40,
-    #endif
-
 		FRAME_BEGIN =  0, //!< Beginning value of frames.
 		FRAME_END   = 20  //!< Ending value of frames.
 	};

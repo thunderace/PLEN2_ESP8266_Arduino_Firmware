@@ -1,4 +1,5 @@
 Debug/
 .vs/
 firmware/Debug/
+firmware/Release/
 firmware/__vm/

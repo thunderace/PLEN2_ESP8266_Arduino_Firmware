@@ -7,7 +7,7 @@
 	(See also : http://opensource.org/licenses/mit-license.php)
 */
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "Profiler.h"
 
 namespace

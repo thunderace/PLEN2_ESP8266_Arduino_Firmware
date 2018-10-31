@@ -96,9 +96,6 @@ void PLEN2::Soul::log()
 		If something data arrived in the serial buffer already,
 		return the method to keep the integrity of the data.
 	*/
-	// TODO: 
-	//if (   System::BLESerial().available()
-	//	|| System::USBSerial().available() )
 	if (System::SystemSerial().available())
 	{
 		return;

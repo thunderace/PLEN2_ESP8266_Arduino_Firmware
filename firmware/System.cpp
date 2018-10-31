@@ -6,20 +6,26 @@
 	This software is released under the MIT License.
 	(See also : http://opensource.org/licenses/mit-license.php)
 */
+#include <Arduino.h>
 #include <Ticker.h>
-#include "Arduino.h"
-#include "Pin.h"
-#include "System.h"
 #include <ESP8266WiFi.h>
 #include <WiFiUDP.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266HTTPUpdateServer.h>
+#include "firmware.h"
+#include "Pin.h"
+#include "System.h"
 #include "ExternalFs.h"
 #include "Profiler.h"
+#if BLE_SERIAL
+	#include <SoftwareSerial.h>
+	SoftwareSerial BLESerial(PLEN2::Pin::BLE_RX(), PLEN2::Pin::BLE_TX()); // RX, TX
+#endif
 
 #define PLEN2_SYSTEM_SERIAL Serial
+#define PLEN2_BLE_SERIAL BLESerial
 
 #define CONNECT_TIMEOUT_CNT 100
 
@@ -44,7 +50,7 @@ extern File fp_motion;
 extern File fp_config;
 extern File fp_syscfg;
 File fsUploadFile;
-//启动ao模式
+
 void PLEN2::System::StartAp()
 {
 #if CLOCK_WISE
@@ -61,14 +67,13 @@ void PLEN2::System::StartAp()
     outputSerial().print("PSWD:");
     outputSerial().println(wifi_psd);
 }
-//启用sta模式
+
 PLEN2::System::System()
 {
 	PLEN2_SYSTEM_SERIAL.begin(SERIAL_BAUDRATE());
 	WiFi.mode(WIFI_STA);
 }
 
-//配置wiif信息和存储
 void PLEN2::System::setup_smartconfig()
 {
 #if 1
@@ -386,6 +391,12 @@ char PLEN2::System::tcp_read()
 {
     return serverClient.read();
 }
+
+Stream& PLEN2::System::BLESerial()
+{
+	return PLEN2_SYSTEM_SERIAL;
+}
+
 
 Stream& PLEN2::System::SystemSerial()
 {

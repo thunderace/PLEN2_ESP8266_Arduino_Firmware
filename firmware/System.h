@@ -49,6 +49,13 @@ public:
 	System();
 
 	/*!
+	@brief Get BLE-serial instance   获取USB串口实例
+
+	@return Reference of BLE-serial instance USB串口实例参考
+	*/
+	static Stream& BLESerial();
+
+	/*!
 		@brief Get USB-serial instance   获取USB串口实例
 
 		@return Reference of USB-serial instance USB串口实例参考

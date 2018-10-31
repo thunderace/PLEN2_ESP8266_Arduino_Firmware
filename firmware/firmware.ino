@@ -9,8 +9,6 @@
 
 #include <Adafruit_PWMServoDriver.h>
 #include <string.h>
-
-#include <Wire.h>
 #include <Servo.h>
 
 #include "JointController.h"
@@ -24,7 +22,7 @@
 #include "Profiler.h"
 #include "ExternalFs.h"
 
-#if ENSOUL_PLEN2
+#if MPU_6050
 	#include "AccelerationGyroSensor.h"
 	#include "Soul.h"
 #endif
@@ -40,7 +38,7 @@ namespace
 	MotionController motion_ctrl(joint_ctrl);
 	Interpreter      interpreter(motion_ctrl);
 
-	#if ENSOUL_PLEN2
+	#if MPU_6050
 		AccelerationGyroSensor gyroSensor;
 		Soul                   soul(gyroSensor, motion_ctrl);
 	#endif
@@ -430,7 +428,7 @@ namespace
 
 				(this->*EVENT_HANDLER[header_id][cmd_id])();
 
-				#if ENSOUL_PLEN2
+				#if MPU_6050
 					soul.userActionInputed();
 				#endif
 			}
@@ -498,7 +496,7 @@ void setup()
 	joint_ctrl.loadSettings();
 	System::setup_smartconfig();
 
-	#if ENSOUL_PLEN2
+	#if MPU_6050
 		/*!
 			@attention
 			The order of power supplied or firmware startup timing is base-board, head-board.
@@ -550,14 +548,25 @@ void loop()
 		}
 	}
 
-	if (PLEN2::System::SystemSerial().available())
+	if (PLEN2::System::BLESerial().available())
 	{
-		app.readByte(PLEN2::System::SystemSerial().read());
+		app.readByte(PLEN2::System::BLESerial().read());
 
 		if (app.accept())
 		{
 			app.transitState();
 
+		}
+	} else { // USB or BLe not both
+		if (PLEN2::System::SystemSerial().available())
+		{
+			app.readByte(PLEN2::System::SystemSerial().read());
+
+			if (app.accept())
+			{
+				app.transitState();
+
+			}
 		}
 	}
 	if (PLEN2::System::tcp_available())
@@ -576,7 +585,7 @@ void loop()
 	}
 
 	PLEN2::System::handleClient();
-	#if ENSOUL_PLEN2
+	#if MPU_6050
 		soul.log();
 		soul.action();
 	#endif

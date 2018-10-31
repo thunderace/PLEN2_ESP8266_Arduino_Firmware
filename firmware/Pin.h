@@ -27,17 +27,17 @@ namespace PLEN2
 	 */
 	namespace Pin
 	{
-
+		// Warning D1 and D2 are used as SDA & SCL don't use them here
 		//! @brief Output of PWM, for servo 12
-		inline static const int PWM_OUT_12()          { return 12; }
-
+		inline static const int PWM_OUT_12()			{ return D6; }
 		//! @brief Output of PWM, for servo 14
-		inline static const int PWM_OUT_14()          { return 14; }
-        //! @brief Output of PCA9685
-        inline static const int PCA9685_ENABLE()      { return 13; }
-		//! @brief Output of LED TODO TBD
-		inline static const int LED_OUT()             { return 10; }
-    inline static const int LED()                 {return 16;}
+		inline static const int PWM_OUT_14()			{ return D7; }
+		//! @brief Output for WS2812 leds
+		inline static const int PIXEL_PIN()				{ return D3; }
+		//! @brief Input of BLE serial
+		inline static const int BLE_RX()				{ return D4; }
+		//! @brief Output of BLE serial
+		inline static const int BLE_TX()				{ return D5; }
 	}
 }
 
